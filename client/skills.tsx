@@ -280,7 +280,7 @@ You are in Plan Mode, so you cannot change anything yet. When the plan is ready,
           Starts an agent with this audit. It looks for duplicate, unused and outdated skills, and drafts AGENTS.md edits that point each project at the skills it needs. It plans in Claude Plan Mode, which cannot change files. Nothing changes until you approve the plan in Paseo.
         </Text>
         <View style={s.buttons}>
-          <Button s={s} label={runAgent.isPending ? "Starting…" : "Clean up with an agent"} onPress={cleanUp} primary />
+          <Button s={s} label={runAgent.isPending ? "Starting…" : "Audit your skills"} onPress={cleanUp} primary />
         </View>
       </View>
 

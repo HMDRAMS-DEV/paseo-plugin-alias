@@ -15,7 +15,7 @@ Open it from the sidebar or from the Command Center under "Skill usage".
 
 ## Clean up
 
-**Clean up with an agent** starts Claude in Plan Mode in your home folder. First the plugin writes its audit to `~/.alias/setup.json`. The agent reads that file and makes a plan:
+**Audit your skills** starts Claude in Plan Mode in your home folder. First the plugin writes its audit to `~/.alias/setup.json`. The agent reads that file and makes a plan:
 
 - duplicate copies to remove, and which copy to keep
 - copies to merge into one folder, with links for each agent
