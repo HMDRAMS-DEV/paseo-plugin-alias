@@ -1,9 +1,13 @@
 {
   "id": "alias",
   "name": "alias",
-  "media": [],
+  "media": [
+    "assets/card.png",
+    "assets/screenshot.png"
+  ],
   "requirements": {
     "paseo": ">=0.16.2"
   },
-  "description": "Audit your agent skills across Claude Code, Codex and Gemini, and share a public profile of the ones you use."
+  "description": "Audit your agent skills across Claude Code, Codex and Gemini, and share a public profile of the ones you use.",
+  "icon": "assets/icon.png"
 }
