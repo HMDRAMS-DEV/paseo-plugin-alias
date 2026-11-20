@@ -15,7 +15,7 @@ Open it from the sidebar or from the Command Center under "Skill usage".
 
 ## Clean up
 
-**Clean up with an agent** starts an agent in your home folder. First the plugin writes its audit to `~/.alias/setup.json`. The agent reads that file and makes a plan:
+**Clean up with an agent** starts Claude in Plan Mode in your home folder. First the plugin writes its audit to `~/.alias/setup.json`. The agent reads that file and makes a plan:
 
 - duplicate copies to remove, and which copy to keep
 - copies to merge into one folder, with links for each agent
@@ -23,9 +23,9 @@ Open it from the sidebar or from the Command Center under "Skill usage".
 - skills with a newer version
 - edits to your AGENTS.md and CLAUDE.md files that point each project at the skills that fit it
 
-The agent stops at the plan. It changes nothing until you approve, and you can approve only some rows. It downloads and installs nothing to run the audit.
+Plan Mode is read-only. Claude cannot edit files or run commands until you approve the plan in Paseo, and you can approve only some rows. Cleanup needs Claude Code. If Claude is not set up in Paseo, the button shows an error and starts nothing. The agent downloads and installs nothing to run the audit.
 
-**Fix with an agent** works the same way for broken links. It starts an agent with the fix commands shown on the screen.
+**Fix with an agent** is for broken links. It starts your first Paseo profile with the fix commands shown on the screen, in that profile's permission mode.
 
 ## Sharing
 

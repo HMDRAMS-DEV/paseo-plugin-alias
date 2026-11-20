@@ -10,6 +10,7 @@ import { auditRpc, COMMUNITY_URL, linkXRpc, saveSetupRpc, shareRpc } from "../sh
 
 const KEY = ["alias", "audit"];
 const SHORT = 10;
+const PLAN_NEEDS_CLAUDE = "Cleanup needs Claude Code in Paseo. The plan runs in Claude Plan Mode, which cannot change files.";
 
 function makeStyles(theme: PluginTheme, compact: boolean) {
   const c = theme.colors;
@@ -77,12 +78,27 @@ export function SkillsScreen({ theme, layout, navigation }: PluginScreenProps) {
   });
   const paseo = usePaseo();
   // Starts an agent with a prompt, then opens it.
+  // With readOnly, the agent runs Claude in Plan Mode. Claude cannot edit files or run commands in
+  // that mode, and it leaves Plan Mode only when the user approves the plan in Paseo.
   const runAgent = useMutation({
-    mutationFn: async ({ title, prompt }: { title: string; prompt: string }) => {
+    mutationFn: async ({ title, prompt, readOnly }: { title: string; prompt: string; readOnly?: boolean }) => {
       // Use the first agent profile set up in Paseo, so the thread gets the user's model, mode, effort and options.
       const profile = (await paseo.config.get()).config.agentProfiles?.[0];
       let config: Parameters<typeof paseo.agents.create>[0]["config"];
-      if (profile?.model) {
+      if (readOnly) {
+        const { providers } = await paseo.providers.listAvailable();
+        if (!providers.some((p) => p.provider === "claude" && p.available)) throw new Error(PLAN_NEEDS_CLAUDE);
+        const { modes = [] } = await paseo.providers.listModes("claude");
+        if (!modes.some((m) => m.id === "plan")) throw new Error(PLAN_NEEDS_CLAUDE);
+        let model = profile?.provider === "claude" ? profile.model : undefined;
+        if (!model) {
+          const { models = [] } = await paseo.providers.listModels("claude");
+          model = (models.find((m) => m.isDefault) ?? models[0])?.id;
+        }
+        if (!model) throw new Error("Claude has no models.");
+        const thinkingOptionId = profile?.provider === "claude" ? profile.thinkingOptionId : undefined;
+        config = { provider: `claude/${model}`, modeId: "plan", thinkingOptionId };
+      } else if (profile?.model) {
         const { provider, model, modeId, thinkingOptionId, options } = profile;
         config = { provider: `${provider}/${model}`, modeId, thinkingOptionId, options };
       } else {
@@ -123,6 +139,7 @@ export function SkillsScreen({ theme, layout, navigation }: PluginScreenProps) {
     }
     runAgent.mutate({
       title: "Clean up my skills",
+      readOnly: true,
       prompt: `Clean up the skills installed on this machine. Work in five steps and stop after the plan.
 
 1. Read the audit. The alias plugin just wrote it to ${path}. It lists every installed skill, how many times each was used, duplicates and broken links. Do not download or install anything to redo it.
@@ -131,7 +148,7 @@ export function SkillsScreen({ theme, layout, navigation }: PluginScreenProps) {
 4. Check agent instructions. Read the global instruction files (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md) and the AGENTS.md or CLAUDE.md in each project the usage log shows. For each one, work out what the project is about and which installed skills fit it. Draft a short edit that names those skills and when to use them. Skip a file when it already covers this.
 5. Plan. Show me one table: duplicates to remove and which copy to keep, copies to consolidate into one with links, skills that were never used or not used in 90 days, and skills with an update. Give the exact command for each row. Then show each instruction file edit as a diff.
 
-Do not delete, move, update or edit anything until I approve the plan. I may approve only some rows or some edits. After I approve, make those changes. Then give me a short summary: how many skills were removed, how many were updated, which instruction files changed, and anything that failed or that you skipped, with the reason.`,
+You are in Plan Mode, so you cannot change anything yet. When the plan is ready, submit it for my approval. I may approve only some rows or some edits. After I approve, make only those changes. Then give me a short summary: how many skills were removed, how many were updated, which instruction files changed, and anything that failed or that you skipped, with the reason.`,
     });
   };
   const [confirm, setConfirm] = useState(false);
@@ -260,7 +277,7 @@ Do not delete, move, update or edit anything until I approve the plan. I may app
       <View style={s.card}>
         <Text style={s.heading}>Clean up</Text>
         <Text style={s.muted}>
-          Starts an agent with this audit. It looks for duplicate, unused and outdated skills, and drafts AGENTS.md edits that point each project at the skills it needs. You get a plan first. Nothing changes until you approve it.
+          Starts an agent with this audit. It looks for duplicate, unused and outdated skills, and drafts AGENTS.md edits that point each project at the skills it needs. It plans in Claude Plan Mode, which cannot change files. Nothing changes until you approve the plan in Paseo.
         </Text>
         <View style={s.buttons}>
           <Button s={s} label={runAgent.isPending ? "Starting…" : "Clean up with an agent"} onPress={cleanUp} primary />
