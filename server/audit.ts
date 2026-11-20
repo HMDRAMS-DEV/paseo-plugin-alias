@@ -4,7 +4,7 @@ import path from "node:path";
 import { publicProfile } from "./vendor/core/setup.mjs";
 import { scanSetup } from "./vendor/lib/setup.mjs";
 import type { RpcInput, RpcOutput } from "@getpaseo/plugin";
-import type { auditRpc, linkXRpc, shareRpc } from "../shared/alias";
+import type { auditRpc, linkXRpc, saveSetupRpc, shareRpc } from "../shared/alias";
 
 export interface Setup {
   headline: { agent: string };
@@ -49,6 +49,14 @@ export async function audit(): Promise<RpcOutput<typeof auditRpc>> {
     x: loadConfig().x ?? null,
     home: os.homedir(),
   };
+}
+
+// The full scan, written next to the config for the cleanup agent to read.
+export async function saveSetup(): Promise<RpcOutput<typeof saveSetupRpc>> {
+  const file = path.join(os.homedir(), ".alias", "setup.json");
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(scan(), null, 2), { mode: 0o600 });
+  return { path: file };
 }
 
 async function call(method: string, route: string, body: unknown, token?: string) {

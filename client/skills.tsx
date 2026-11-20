@@ -6,7 +6,7 @@ import { copyText, Modal, useToast } from "@getpaseo/plugin/client/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { auditRpc, COMMUNITY_URL, linkXRpc, shareRpc } from "../shared/alias";
+import { auditRpc, COMMUNITY_URL, linkXRpc, saveSetupRpc, shareRpc } from "../shared/alias";
 
 const KEY = ["alias", "audit"];
 const SHORT = 10;
@@ -66,6 +66,7 @@ export function SkillsScreen({ theme, layout, navigation }: PluginScreenProps) {
     onError: (e) => toast.error(`Could not link X. ${e.message}`),
   });
   const callShare = useRpc(shareRpc);
+  const saveSetup = useRpc(saveSetupRpc);
   const share = useMutation({
     mutationFn: callShare,
     onSuccess: ({ sharedUrl }) => {
@@ -112,12 +113,19 @@ export function SkillsScreen({ theme, layout, navigation }: PluginScreenProps) {
         .data!.broken.map((b) => `- ${b.name}: ${b.path}\n${b.fixes.map((f) => `  ${f.why}: ${f.command}`).join("\n")}`)
         .join("\n")}`,
     });
-  const cleanUp = () =>
+  const cleanUp = async () => {
+    let path: string;
+    try {
+      ({ path } = await saveSetup({}));
+    } catch (e) {
+      toast.error(`Could not save the audit. ${(e as Error).message}`);
+      return;
+    }
     runAgent.mutate({
       title: "Clean up my skills",
       prompt: `Clean up the skills installed on this machine. Work in five steps and stop after the plan.
 
-1. Audit. Run \`npx -y https://alias.computer/alias-skills.tgz audit --json\` and read the "setup" block. It lists every installed skill, how many times each was used, duplicates and broken links.
+1. Read the audit. The alias plugin just wrote it to ${path}. It lists every installed skill, how many times each was used, duplicates and broken links. Do not download or install anything to redo it.
 2. Check for updates. For each skill, find where it came from (a git remote, a plugin marketplace, or a skills lock file) and check whether a newer version exists. Say so when you cannot tell.
 3. Consolidate. Claude Code reads ~/.claude/skills. Codex, Gemini CLI and Cursor read ~/.agents/skills (Gemini also ~/.gemini/skills, Codex also ~/.codex/skills). For each skill that exists as separate copies in these folders, or that one agent has and another agent that should have it lacks, propose one real copy in ~/.agents/skills with symlinks from the other agent folders. When copies differ, say which is newer and keep that one. Leave plugin, bundled and project skills where they are.
 4. Check agent instructions. Read the global instruction files (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md) and the AGENTS.md or CLAUDE.md in each project the usage log shows. For each one, work out what the project is about and which installed skills fit it. Draft a short edit that names those skills and when to use them. Skip a file when it already covers this.
@@ -125,6 +133,7 @@ export function SkillsScreen({ theme, layout, navigation }: PluginScreenProps) {
 
 Do not delete, move, update or edit anything until I approve the plan. I may approve only some rows or some edits. After I approve, make those changes. Then give me a short summary: how many skills were removed, how many were updated, which instruction files changed, and anything that failed or that you skipped, with the reason.`,
     });
+  };
   const [confirm, setConfirm] = useState(false);
   const [allUsed, setAllUsed] = useState(false);
   const [allUnused, setAllUnused] = useState(false);
@@ -251,7 +260,7 @@ Do not delete, move, update or edit anything until I approve the plan. I may app
       <View style={s.card}>
         <Text style={s.heading}>Clean up</Text>
         <Text style={s.muted}>
-          Start an agent that finds duplicate and unused skills, keeps one copy of each skill and links it into every agent's folder, checks each skill for a newer version, and drafts edits to your AGENTS.md files so each project points at the skills that fit it. It shows you a plan and waits for your OK before it changes anything, then gives you a short summary.
+          Starts an agent with this audit. It looks for duplicate, unused and outdated skills, and drafts AGENTS.md edits that point each project at the skills it needs. You get a plan first. Nothing changes until you approve it.
         </Text>
         <View style={s.buttons}>
           <Button s={s} label={runAgent.isPending ? "Starting…" : "Clean up with an agent"} onPress={cleanUp} primary />

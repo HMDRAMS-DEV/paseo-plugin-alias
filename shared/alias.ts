@@ -45,4 +45,11 @@ export const linkXRpc = defineRpc({
   output: z.object({ x }),
 });
 
+// Writes the full local audit to a file so a cleanup agent can read it without installing anything.
+export const saveSetupRpc = defineRpc({
+  name: "alias.save_setup",
+  input: z.object({}),
+  output: z.object({ path: z.string() }),
+});
+
 export const COMMUNITY_URL = "https://alias.computer/skills";
